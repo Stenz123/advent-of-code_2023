@@ -13,7 +13,7 @@ abstract class Day (val useExampleInput: Boolean = false) {
 
     fun readInput(): List<String> {
         val fileName = if (useExampleInput) {
-            "./example.txt"
+            "./example_input.txt"
         } else {
             "./input.txt"
         }
