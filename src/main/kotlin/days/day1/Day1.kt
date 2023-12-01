@@ -3,11 +3,8 @@ package days.day1
 import days.Day
 
 class Day1 : Day(false) {
-    override fun partOne(): Any {
-        val inputNumbers = readInput().map { it.filter (Char::isDigit) }
-        return inputNumbers.sumOf {
-            (it.first() +""+ it.last()).toInt()
-        }
+    override fun partOne() = readInput().map { it.filter (Char::isDigit) }.sumOf {
+        (it.first() + "" + it.last()).toInt()
     }
 
     override fun partTwo(): Any {
