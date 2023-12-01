@@ -4,79 +4,59 @@ import days.Day
 
 class Day1 : Day(false) {
     override fun partOne(): Any {
-        val input = readInput()
-
-        //find first number in string
-        val numbers = input.map { it.filter { c -> c.isDigit() } }
-        val fisar = numbers.map {
-            val string: String = it.first() + "" + it.last()
-            string.toInt()
+        val inputNumbers = readInput().map { it.filter (Char::isDigit) }
+        return inputNumbers.sumOf {
+            (it.first() +""+ it.last()).toInt()
         }
-
-        val sum = fisar.sum()
-
-
-        return sum
     }
 
     override fun partTwo(): Any {
-        val input = readInput().map {convertStringWithSpelledOutDigitsToStringWithDigits(it) }
-val optherINput = readInput().map { convertStringWithSpelledOutDigitsToStringWithDigitsBackwards(it) }
-        //find first number in string
-        val numbers = input.map { it.filter { c -> c.isDigit() } }
-        val otherNumbers = optherINput.map { it.filter { c -> c.isDigit() } }
-        val fisar = numbers.map {
-            it.first().toString()
-        }
-        val otherFisar = otherNumbers.map {
-            it.last().toString()
-        }
-        val sum = fisar.zip(otherFisar).map { (it.first + it.second).toInt() }.sum()
+        val inputDigits = readInput().map { convertStringWithSpelledOutDigitsToDigits(it) }
+        val reversedInputDigits = readInput().map { convertStringWithSpelledOutDigitsToDigitsBackwards(it) }
 
+        val numbers = inputDigits.map { it.filter (Char::isDigit) }
+        val reversedNumbers = reversedInputDigits.map { it.filter (Char::isDigit) }
 
-        return sum
+        val firstDigitString = numbers.map { it.first().toString() }
+        val firstDigitFromBackString = reversedNumbers.map { it.last().toString() }
+
+        return firstDigitString.zip(firstDigitFromBackString).sumOf { (it.first + it.second).toInt() }
     }
 
-
-    fun convertStringWithSpelledOutDigitsToStringWithDigits(string: String): String {
-        //start reading the string from left while parsing
+    private fun convertStringWithSpelledOutDigitsToDigits(input: String): String {
         var sequence = ""
-        for (i in 0..<string.length) {
-            val char = string[i]
+        for (char in input) {
             val sequenceBuilder = StringBuilder(sequence)
             sequenceBuilder.append(char)
-            sequence= sequenceBuilder.toString()
+            sequence = sequenceBuilder.toString()
             val oldSequence = sequence
-            sequence = convertStringWithSpelledOutDigitsToStringWithDigitsWIthout(sequence)
+            sequence = convertStringWithSpelledOutDigitsNoOrder(sequence)
             if (oldSequence != sequence) {
                 return sequence
             }
-
         }
         return sequence
     }
 
-    fun convertStringWithSpelledOutDigitsToStringWithDigitsBackwards(string: String): String {
-        //start reading the string from right while parsing
+    private fun convertStringWithSpelledOutDigitsToDigitsBackwards(input: String): String {
         var sequence = ""
-        for (i in string.length - 1 downTo 0) {
-            val char = string[i]
+        for (i in input.length - 1 downTo 0) {
+            val char = input[i]
             val sequenceBuilder = StringBuilder()
             sequenceBuilder.append(char)
             sequenceBuilder.append(sequence)
-            sequence= sequenceBuilder.toString()
+            sequence = sequenceBuilder.toString()
             val oldSequence = sequence
-            sequence = convertStringWithSpelledOutDigitsToStringWithDigitsWIthout(sequence)
+            sequence = convertStringWithSpelledOutDigitsNoOrder(sequence)
             if (oldSequence != sequence) {
                 return sequence
             }
-
         }
         return sequence
     }
 
-    fun convertStringWithSpelledOutDigitsToStringWithDigitsWIthout(string: String): String {
-        return string.replace("one", "1")
+    private fun convertStringWithSpelledOutDigitsNoOrder(input: String): String {
+        return input.replace("one", "1")
             .replace("two", "2")
             .replace("three", "3")
             .replace("four", "4")
@@ -88,8 +68,3 @@ val optherINput = readInput().map { convertStringWithSpelledOutDigitsToStringWit
             .replace("zero", "0")
     }
 }
-
-
-
-
-
