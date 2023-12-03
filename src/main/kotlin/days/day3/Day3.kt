@@ -1,8 +1,12 @@
 package days.day3
 
 import days.Day
+import java.util.*
+import kotlin.collections.HashMap
+import kotlin.collections.HashSet
 
 class Day3: Day(false) {
+    //NOTE: I Didn't impliment the edgecase for the edge. If you just add a padding of '.' it works.
     override fun partOne(): Any {
         val input: HashMap<Coordinate, Char> = HashMap()
 
@@ -12,9 +16,6 @@ class Day3: Day(false) {
                 input[Coordinate(i, j)] = rawInput[i][j]
             }
         }
-
-        //filter numbers
-
 
         val digits = input.filter { it.value.isDigit() }
 
@@ -53,9 +54,6 @@ class Day3: Day(false) {
         }
 
         return result
-
-
-        return "day 3 part 2 not Implemented"
     }
 
     fun findConnectedNumbers(input: HashMap<Coordinate, Char>, currentCoordinate: Coordinate): HashSet<Coordinate> {
@@ -80,15 +78,71 @@ class Day3: Day(false) {
     }
 
     override fun partTwo(): Any {
-        return "hajkl"
+        val input: HashMap<Coordinate, Char> = HashMap()
+
+        val rawInput = readInput()
+        for (i in rawInput.indices) {
+            for (j in rawInput[i].indices) {
+                input[Coordinate(i, j)] = rawInput[i][j]
+            }
+        }
+
+        val digits = input.filter { it.value.isDigit() }
+
+        val numberCoordinates :HashSet<HashSet<Coordinate>> = hashSetOf()
+
+        for (digit in digits) {
+            numberCoordinates.add(findConnectedNumbers(input, digit.key))
+        }
+
+        val validNumberCOordinates = numberCoordinates.filter {coordinateList ->
+            coordinateList.any { coordinate ->
+                coordinate.getNeighbours().any { neighbour ->
+                    input.containsKey(neighbour) && input[neighbour]!! == '*'
+                }
+            }
+        }
+
+        val gears = input.filter { it.value == '*' }
+
+        var realRes = 1
+        for (gear in gears) {
+            var numberCount = 0
+            var result = 1
+
+            for (number in validNumberCOordinates) {
+                if(isNextToGear(input, number, gear.key)) {
+                   numberCount++
+                    result*= toNumber(input, number)
+                }
+            }
+            if (numberCount == 2) {
+                realRes+= result
+            }
+        }
+
+        return realRes -1
+    }
+    fun isNextToGear(input: HashMap<Coordinate, Char>, coordinates: HashSet<Coordinate>, gear: Coordinate): Boolean {
+        return coordinates.any{it.getNeighbours().any { neighbour ->
+            neighbour == gear
+        }
+    }}
+
+    fun toNumber(input: HashMap<Coordinate, Char>, coordinates: HashSet<Coordinate>): Int {
+        val linkedList = LinkedList<Coordinate>(coordinates)
+        linkedList.sort()
+
+        val stringBuilder = StringBuilder()
+        for (coordinate in linkedList) {
+            stringBuilder.append(input[coordinate])
+        }
+        return stringBuilder.toString().toInt()
+
     }
 
 }
-
-
-
-
-class Coordinate(val x: Int, val y: Int) {
+class Coordinate(val x: Int, val y: Int):Comparable<Coordinate> {
     fun getNeighbours(): MutableList<Coordinate> {
         return mutableListOf(
             Coordinate(x - 1, y - 1),
@@ -107,6 +161,15 @@ class Coordinate(val x: Int, val y: Int) {
             ,this
             , Coordinate(x, y + 1)
         )
+    }
+
+    override fun compareTo(other: Coordinate): Int {
+
+        if (this.y == other.y) {
+            return this.x.compareTo(other.x)
+        }
+        return this.y.compareTo(other.y)
+
     }
 
     override fun equals(other: Any?): Boolean {
