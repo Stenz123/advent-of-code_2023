@@ -4,95 +4,6 @@ import days.Day
 
 class Day3: Day(false) {
     override fun partOne(): Any {
-        //467..114..
-        //...*.....
-        //..35..633.
-        //......#...
-        //617*......
-        //.....+.58.
-        //..592.....
-        //......755.
-        //...$.*....
-        //.664.598..
-
-        val input: HashMap<Coordinate, Char> = HashMap()
-
-        val rawInput = readInput()
-        for (i in rawInput.indices) {
-            for (j in rawInput[i].indices) {
-                input[Coordinate(i, j)] = rawInput[i][j]
-            }
-        }
-
-
-
-        val validDigits: HashMap<Coordinate, Char> = HashMap()
-
-        input.filter { !it.value.isDigit() && it.value != '.' }
-            .forEach{ coordinateChar ->
-                println(coordinateChar)
-                findConnectedNumbers(input, coordinateChar.key, validDigits).forEach{
-                     validDigits[it.key] = it.value
-                 }
-            }
-
-
-        input.filter { it.value.isDigit() && it.key !in validDigits.keys }
-            .forEach { coordinateChar ->
-                println(coordinateChar)
-            }
-
-
-
-        var result = 0
-
-        for (i in rawInput.indices) {
-            var stringBuilder = StringBuilder()
-            for (j in rawInput[i].indices) {
-                if (validDigits.containsKey(Coordinate(i, j))) {
-                    stringBuilder.append(validDigits[Coordinate(i, j)])
-                    //print(validDigits[Coordinate(i, j)])
-                } else {
-                    val string = stringBuilder.toString()
-                    if (string.isNotEmpty()) {
-                        result+= string.toInt()
-                        //println()
-                    }
-                    stringBuilder = StringBuilder()
-                }
-            }
-           //println()
-        }
-
-        return result
-    }
-
-    fun findConnectedNumbers(input: HashMap<Coordinate, Char>, currentCoordinate: Coordinate, validDigits: HashMap<Coordinate, Char>): HashMap<Coordinate, Char> {
-
-        val neighbours :List<Coordinate> = if (!input[currentCoordinate]!!.isDigit()) {
-            currentCoordinate.getNeighbours()
-        } else{
-            currentCoordinate.getNeighbours()
-        }
-
-        val neighboursWithValues = neighbours.filter { neighbour -> input.containsKey(neighbour) }
-        val neighboursWithValuesAndDigits = neighboursWithValues.filter { neighbour -> input[neighbour]!!.isDigit() }
-        val neighboursWithValuesAndDigitsAndNotVisited = neighboursWithValuesAndDigits.filter { neighbour -> !validDigits.containsKey(neighbour) }
-        val neighboursWithValuesAndDigitsAndNotVisitedAndNotCurrent = neighboursWithValuesAndDigitsAndNotVisited.filter { neighbour -> neighbour != currentCoordinate }
-
-        if (neighboursWithValuesAndDigitsAndNotVisitedAndNotCurrent.isEmpty()) {
-            return validDigits
-        }
-
-        neighboursWithValuesAndDigitsAndNotVisitedAndNotCurrent.forEach { neighbour ->
-            validDigits[neighbour] = input[neighbour]!!
-            findConnectedNumbers(input, neighbour, validDigits)
-        }
-
-        return validDigits
-    }
-
-    override fun partTwo(): Any {
         val input: HashMap<Coordinate, Char> = HashMap()
 
         val rawInput = readInput()
@@ -104,53 +15,82 @@ class Day3: Day(false) {
 
         //filter numbers
 
-        val validDigits: HashMap<Coordinate, Char> = HashMap()
 
-        val digits = input.filter { it.value.isDigit() && it.key.getNeighbours().any { neighbour -> input.containsKey(neighbour) && input[neighbour]!! != '.'  && input[neighbour]!!.isDigit()}}
+        val digits = input.filter { it.value.isDigit() }
+
+        var numberCoordinates :HashSet<HashSet<Coordinate>> = hashSetOf()
 
         for (digit in digits) {
-            var neighbours = digit.key.getNeighboursLeftRight().filter { neighbour -> input.containsKey(neighbour) && input[neighbour]!! != '.'  && input[neighbour]!!.isDigit() }
-                .toMutableList()
-
-
-
+            numberCoordinates.add(findConnectedNumbers(input, digit.key))
         }
+
+        val validNumberCOordinates = numberCoordinates.filter {coordinateList ->
+            coordinateList.any { coordinate ->
+                coordinate.getNeighbours().any { neighbour ->
+                    input.containsKey(neighbour) && input[neighbour]!! != '.'  && !input[neighbour]!!.isDigit()
+                }
+            }
+        }
+
+        var result = 0
+
+        for (i in rawInput.indices) {
+            var stringBuilder = StringBuilder()
+            for (j in rawInput[i].indices) {
+                if (validNumberCOordinates.flatten().contains(Coordinate(i, j))) {
+                    stringBuilder.append(input[Coordinate(i, j)])
+                    print(input[Coordinate(i, j)])
+                } else {
+                    val string = stringBuilder.toString()
+                    if (string.isNotEmpty()) {
+                        result+= string.toInt()
+                        println()
+                    }
+                    stringBuilder = StringBuilder()
+                }
+            }
+            println()
+        }
+
+        return result
+
 
         return "day 3 part 2 not Implemented"
     }
 
-    fun findConnectedNumbersLeftRight(input: HashMap<Coordinate, Char>, currentCoordinate: Coordinate, validDigits: HashMap<Coordinate, Char>): HashMap<Coordinate, Char> {
+    fun findConnectedNumbers(input: HashMap<Coordinate, Char>, currentCoordinate: Coordinate): HashSet<Coordinate> {
 
-        val neighbours :List<Coordinate> = if (!input[currentCoordinate]!!.isDigit()) {
-            currentCoordinate.getNeighbours()
-        } else{
-            currentCoordinate.getNeighbours()
+        var neighbours = currentCoordinate.getNeighboursLeftRight().filter{neighbour -> input.containsKey(neighbour) && input[neighbour]!!.isDigit()}.toHashSet()
+
+       var neighboursCache = HashSet<Coordinate>()
+        neighbours.forEach{ neighbour ->
+            val newNeighbours = neighbour.getNeighbours().filter { newNeighbour -> input.containsKey(newNeighbour) && input[newNeighbour]!!.isDigit() }
+            neighboursCache.addAll(newNeighbours)
+        }
+        for(i in 0..100) {
+            neighbours.addAll(neighboursCache)
+            neighbours.forEach{ neighbour ->
+                val newNeighbours = neighbour.getNeighbours().filter { newNeighbour -> input.containsKey(newNeighbour) && input[newNeighbour]!!.isDigit() }
+                neighboursCache.addAll(newNeighbours)
+            }
         }
 
-        val neighboursWithValues = neighbours.filter { neighbour -> input.containsKey(neighbour) }
-        val neighboursWithValuesAndDigits = neighboursWithValues.filter { neighbour -> input[neighbour]!!.isDigit() }
-        val neighboursWithValuesAndDigitsAndNotVisited = neighboursWithValuesAndDigits.filter { neighbour -> !validDigits.containsKey(neighbour) }
-        val neighboursWithValuesAndDigitsAndNotVisitedAndNotCurrent = neighboursWithValuesAndDigitsAndNotVisited.filter { neighbour -> neighbour != currentCoordinate }
 
-        if (neighboursWithValuesAndDigitsAndNotVisitedAndNotCurrent.isEmpty()) {
-            return validDigits
-        }
-
-        neighboursWithValuesAndDigitsAndNotVisitedAndNotCurrent.forEach { neighbour ->
-            validDigits[neighbour] = input[neighbour]!!
-            findConnectedNumbers(input, neighbour, validDigits)
-        }
-
-        return validDigits
+        return neighbours
     }
+
+    override fun partTwo(): Any {
+        return "hajkl"
+    }
+
 }
 
 
 
 
 class Coordinate(val x: Int, val y: Int) {
-    fun getNeighbours(): List<Coordinate> {
-        return listOf(
+    fun getNeighbours(): MutableList<Coordinate> {
+        return mutableListOf(
             Coordinate(x - 1, y - 1),
             Coordinate(x - 1, y),
             Coordinate(x - 1, y + 1),
@@ -161,8 +101,8 @@ class Coordinate(val x: Int, val y: Int) {
             Coordinate(x + 1, y + 1)
         )
     }
-    fun getNeighboursLeftRight(): List<Coordinate> {
-        return listOf(
+    fun getNeighboursLeftRight(): MutableList<Coordinate> {
+        return mutableListOf(
             Coordinate(x, y - 1)
             ,this
             , Coordinate(x, y + 1)
