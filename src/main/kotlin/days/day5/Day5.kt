@@ -3,12 +3,11 @@ package days.day5
 import days.Day
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
-import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.runBlocking
 import java.sql.Timestamp
 import java.time.Instant
-import java.time.format.DateTimeFormatter
 import java.util.*
+import java.util.concurrent.atomic.AtomicLong
 
 class Day5 : Day(false) {
     override fun partOne(): Any {
@@ -53,9 +52,9 @@ class Day5 : Day(false) {
         return results.min()
     }
 
-// ... Your existing code ...
-
     override fun partTwo(): Any {
+        val time = Timestamp.from(Instant.now()).time
+
         val inputSeeds = readInput().first().substringAfter(": ").split(" ").map { it.toLong() }
         val realInputSeeds = mutableListOf<LongRange>()
 
@@ -85,11 +84,14 @@ class Day5 : Day(false) {
         input.add(map)
         input.removeAt(0)
 
-        val results = runBlocking {
-            realInputSeeds.map { seedRange ->
+        val atomicResult = AtomicLong(Long.MAX_VALUE)
+
+
+        runBlocking {
+            realInputSeeds.forEach { seedRange ->
                 async(Dispatchers.IO) {
-                    seedRange.map { seed ->
-                        var currentValue: Long = seed
+                    seedRange.forEach { seed ->
+                        var currentValue = seed
                         for (map in input) {
                             for ((first, second) in map) {
                                 if (first.contains(currentValue)) {
@@ -98,42 +100,16 @@ class Day5 : Day(false) {
                                 }
                             }
                         }
-                        currentValue
-                    }.also {
-                        print("Finished seed ${seedRange.first} - ${seedRange.last} at")
-                        println(DateTimeFormatter.ISO_INSTANT.format(Instant.now()))
-                        println("Results: ${it.min()}")
+                        if (currentValue < atomicResult.get()) {
+                            println("New min: $currentValue")
+                            atomicResult.set(currentValue)
+                        }
                     }
                 }
-            }.awaitAll().flatten().minOrNull()
-        }
-
-
-        return results!!
-    }
-
-    fun parseRangeToRanges(range1: LongRange, ranges: List<Pair<LongRange, Long>>): MutableList<LongRange> {
-        val resultRanges = mutableListOf<LongRange>()
-
-        for (range in ranges) {
-            val rangeOberlap = rangeOverlap(range1, range)
-            if (rangeOberlap != null) {
-                resultRanges.add(rangeOberlap)
             }
         }
+        println("Time: ${Timestamp.from(Instant.now()).time-time}")
 
-        return resultRanges
+        return atomicResult.get()
     }
-
-    fun rangeOverlap(range1: LongRange, range2: Pair<LongRange, Long>): LongRange? {
-        val start = Math.max(range1.first, range2.first.first)
-        val end = Math.min(range1.last, range2.first.last)
-        if (start <= end) {
-            val lenf = end - start
-            return range2.second..range2.second + lenf
-        } else {
-            return null
-        }
-    }
-
 }
