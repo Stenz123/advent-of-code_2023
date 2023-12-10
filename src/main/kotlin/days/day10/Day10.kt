@@ -2,7 +2,7 @@ package days.day10
 
 import days.Day
 
-class Day10 : Day(true) {
+class Day10 : Day(false) {
     override fun partOne(): Any {
         val tubeMap: MutableMap<Coordinate, Pipe> = mutableMapOf()
 
@@ -64,11 +64,11 @@ class Day10 : Day(true) {
             }
         }
 
-        var tilesInPipe = mutableSetOf<Coordinate>()
+        val tilesInPipe = mutableSetOf<Coordinate>()
 
-        var lookingDirection = Direction.LEFT
+        var lookingDirection = Direction.DOWN
         for (coordinate in loop) {
-            val pipe = tubeMap[coordinate] ?: throw Exception("ah sjkl")
+            val pipe = tubeMap[coordinate]!!
             if (pipe.direction == 'L') {
                 lookingDirection = when (lookingDirection) {
                     Direction.RIGHT -> {
@@ -198,8 +198,7 @@ class Day10 : Day(true) {
                 if (filledMap[coordinate.left()] == null) {
                     tilesInPipe.add(coordinate.left())
                 }
-            }
-            else if (lookingDirection == Direction.UP) {
+            } else if (lookingDirection == Direction.UP) {
                 if (filledMap[coordinate.up()] == null) {
                     tilesInPipe.add(coordinate.up())
                 }
@@ -232,7 +231,7 @@ class Day10 : Day(true) {
             for (j in smallestX - margin..highestX + margin) {
                 if (tilesInPipe.contains(Coordinate(j, i))) {
                     print("\u001B[35mI\u001B[0m")
-                }else if (result.contains(Coordinate(j,i))) {
+                } else if (result.contains(Coordinate(j, i))) {
                     print("\u001B[32mI\u001B[0m")
                 } else if (loop.contains(Coordinate(j, i))) {
                     print(tubeMap[Coordinate(j, i)])
@@ -243,15 +242,13 @@ class Day10 : Day(true) {
             }
             println()
         }
-
         return result.size
-
     }
 
     fun getLoop(tubeMap: MutableMap<Coordinate, Pipe>): List<Coordinate> {
         val start = tubeMap.filter { it.value.direction == 'S' }.keys.first()
 
-        val visited = mutableSetOf<Coordinate>(start)
+        val visited = mutableSetOf(start)
         while (true) {
             val current = visited.lastOrNull() ?: start
 
