@@ -3,95 +3,36 @@ package days.day11
 import days.Day
 import kotlin.math.abs
 
-class Day11 : Day() {
+class Day11 : Day(false) {
     override fun partOne(): Any {
-
-
-        val input = readInput()
-
-        val galaxy = readInput().toMutableList()
-
-        var countInsertions = 0
-        for (i in input.indices) {
-            if (input[i].none { it == '#' }) {
-                galaxy.add(i + countInsertions, input[i])
-                countInsertions++
-            }
-        }
-        countInsertions = 0
-        for (i in input[0].indices) {
-            //get column
-            val column = input.map { it[i] }
-            if (column.none { it == '#' }) {
-                for (index in galaxy.indices) {
-                    val res = galaxy[index].substring(
-                        0,
-                        i + countInsertions
-                    ) + "." + galaxy[index].substring(i + countInsertions)
-                    galaxy[index] = res
-                }
-                countInsertions++
-            }
-        }
-
-        val starCoordinates = mutableListOf<Pair<Int, Int>>()
-        for (i in galaxy.indices) {
-            for (j in galaxy[i].indices) {
-                if (galaxy[i][j] == '#') {
-                    starCoordinates.add(Pair(i, j))
-                }
-            }
-        }
-
-        //make pairs of coordinates
-        val pairs = mutableListOf<Pair<Pair<Int, Int>, Pair<Int, Int>>>()
-        for (i in starCoordinates.indices) {
-            for (j in starCoordinates.indices) {
-                if (i != j && i < j) {
-
-                    pairs.add(Pair(starCoordinates[i], starCoordinates[j]))
-                }
-            }
-        }
-
-        var totalDistance = 0
-
-        for (pair in pairs) {
-            val distance = abs(pair.first.first - pair.second.first) + abs(pair.first.second - pair.second.second)
-            println(pair to distance)
-            totalDistance += distance
-        }
-
-
-
-
-        return totalDistance
+        return solve(1)
     }
 
     override fun partTwo(): Any {
-        val increase = 999999
+        return solve(999_999)
+    }
 
+    private fun solve(increas: Int):Long {
         val input = readInput()
-
         val galaxy = readInput().toMutableList()
 
-        val starCoordinates = mutableListOf<Pair<Int, Int>>()
+        val starCoordinates = mutableListOf<Pair<Long, Long>>()
         for (i in galaxy.indices) {
             for (j in galaxy[i].indices) {
                 if (galaxy[i][j] == '#') {
-                    starCoordinates.add(Pair(i, j))
+                    starCoordinates.add(Pair(i.toLong(), j.toLong()))
                 }
             }
         }
 
         val strechedStarCoordinates = starCoordinates.toMutableList()
-
         var countInsertions = 0
         for (i in input.indices) {
             if (input[i].none { it == '#' }) {
                 for (star in strechedStarCoordinates) {
-                    if (star.first >= i + countInsertions * increase +1) {
-                        strechedStarCoordinates[strechedStarCoordinates.indexOf(star)] = Pair(star.first + increase, star.second)
+                    if (star.first >= i + countInsertions * increas) {
+                        strechedStarCoordinates[strechedStarCoordinates.indexOf(star)] =
+                            Pair(star.first + increas, star.second)
                     }
                 }
                 countInsertions++
@@ -99,13 +40,12 @@ class Day11 : Day() {
         }
         countInsertions = 0
         for (i in input[0].indices) {
-            //get column
             val column = input.map { it[i] }
             if (column.none { it == '#' }) {
                 for (star in strechedStarCoordinates) {
-                    if (star.second >= i + countInsertions * increase +1) {
+                    if (star.second >= i + countInsertions * increas) {
                         strechedStarCoordinates[strechedStarCoordinates.indexOf(star)] =
-                            Pair(star.first, star.second + increase)
+                            Pair(star.first, star.second + increas)
                     }
                 }
                 countInsertions++
@@ -113,7 +53,7 @@ class Day11 : Day() {
         }
 
         //make pairs of coordinates
-        val pairs = mutableListOf<Pair<Pair<Int, Int>, Pair<Int, Int>>>()
+        val pairs = mutableListOf<Pair<Pair<Long, Long>, Pair<Long, Long>>>()
         for (i in starCoordinates.indices) {
             for (j in starCoordinates.indices) {
                 if (i != j && i < j) {
@@ -122,16 +62,12 @@ class Day11 : Day() {
             }
         }
 
-        var totalDistance = 0
-
+        var totalDistance:Long = 0
         for (pair in pairs) {
             val distance = abs(pair.first.first - pair.second.first) + abs(pair.first.second - pair.second.second)
-            println(pair to distance)
+            //println(pair to distance)
             totalDistance += distance
         }
-
-
-
 
         return totalDistance
     }
