@@ -2,7 +2,7 @@ package days.day12
 
 import days.Day
 
-class Day12 : Day(true) {
+class Day12 : Day() {
     override fun partOne(): Any {
         val springs: MutableList<Pair<List<Char>, List<Int>>> = mutableListOf()
         val rawInput = readInput()
@@ -63,14 +63,14 @@ class Day12 : Day(true) {
                 Pair(
                     spring.toCharArray().toList(),
                     output + output + output + output + output
-                //output
+                    //output
                 )
             )
         }
 
-        var result = 0
+        var result = 0L
         for (spring in springs) {
-            val res = makeGroup(spring.first, spring.second)
+            val res = makeGroup(spring.first.joinToString (""), spring.second)
             println(res)
             result += res
         }
@@ -78,72 +78,28 @@ class Day12 : Day(true) {
         return result
     }
 
-    fun makeGroup(group: List<Char>, values: List<Int>): Int {
-        val memoKey = group
+    private val cache = hashMapOf<Pair<String, List<Int>>, Long>()
+    private fun makeGroup(springs: String, values: List<Int>): Long {
+        if (values.isEmpty()) return if (springs.contains('#')) 0 else 1
 
+        if (springs.isEmpty()) return 0
 
-        var indexOfFirst = group.indexOfFirst { it == '?' }
-        if (indexOfFirst == -1) indexOfFirst = group.size
-        val newGroup = group.subList(0, indexOfFirst).toMutableList()
-        val groupCountSplit = newGroup.joinToString("").split('.').filter { it.isNotBlank() }
-        var currentGroupSize = if (newGroup.isNotEmpty() && newGroup.last() == '#') {
-            groupCountSplit.last().length
-        } else {
-            0
-        }
-        var groupCount = groupCountSplit.count()
-        if (groupCount > 0) {
-            if (groupCount > values.size) {
-                return 0
+        return cache.getOrPut(springs to values) {
+            var result = 0L
+            if (springs[0] == '.' || springs[0] == '?') {
+                result += makeGroup(springs.drop(1), values)
             }
-            if (currentGroupSize > values[groupCount - 1]) {
-                return 0
-            }
-        }
-
-        for (i in indexOfFirst until group.size) {
-            if (group[i] == '.') {
-                newGroup.add('.')
-                currentGroupSize = 0
-            } else if (group[i] == '#') {
-                if (currentGroupSize == 0) {
-                    groupCount++
-                }
-                currentGroupSize++
-                newGroup.add('#')
-            } else if (group[i] == '?') {
-                if (groupCount > 0) {
-                    if (currentGroupSize == values[groupCount - 1]) {
-                        val group1 = group.toMutableList()
-                        group1[i] = '.'
-                        return makeGroup(group1, values)
+            if (springs[0] in "#?" && values[0] <= springs.length){
+                if ("." !in springs.take(values[0])) {
+                    if (values.first() == springs.length || springs[values[0]] != '#'){
+                        result += makeGroup(springs.drop(values[0] + 1), values.drop(1))
                     }
                 }
-
-                val group1 = group.toMutableList()
-                group1[i] = '.'
-                val group2 = group.toMutableList()
-                group2[i] = '#'
-                val option1 = makeGroup(group1, values)
-                val option2 = makeGroup(group2, values)
-                return option1 + option2
-
             }
+            result
         }
-
-        val result: Int = if (isValid(values, newGroup.joinToString(""))) {
-            1
-        } else {
-            0
-        }
-
-        return result
     }
 
-    fun isValid(values: List<Int>, newSpring: String): Boolean {
-        val split = newSpring.split(".").filter { it.isNotEmpty() }.map { it.length }
-        return split == values
-    }
 
     fun allCombinations(length: Int): List<List<Char>> {
         val values = listOf('.', '#')
