@@ -55,14 +55,14 @@ class Day12 : Day(true) {
         val rawInput = readInput()
         rawInput.forEach {
             val input = it.split(" ")
-            val spring = input[0] + "?"
+            val spring = "${input[0]}?${input[0]}?${input[0]}?${input[0]}?${input[0]}"
             //val spring = input[0]
             val output = input[1].split(",").map { it.toInt() }
 
             springs.add(
                 Pair(
                     spring.toCharArray().toList(),
-                    output + output
+                    output + output + output + output + output
                 //output
                 )
             )
@@ -76,10 +76,12 @@ class Day12 : Day(true) {
         }
 
         return result
-
     }
 
     fun makeGroup(group: List<Char>, values: List<Int>): Int {
+        val memoKey = group
+
+
         var indexOfFirst = group.indexOfFirst { it == '?' }
         if (indexOfFirst == -1) indexOfFirst = group.size
         val newGroup = group.subList(0, indexOfFirst).toMutableList()
@@ -91,7 +93,6 @@ class Day12 : Day(true) {
         }
         var groupCount = groupCountSplit.count()
         if (groupCount > 0) {
-
             if (groupCount > values.size) {
                 return 0
             }
@@ -99,6 +100,7 @@ class Day12 : Day(true) {
                 return 0
             }
         }
+
         for (i in indexOfFirst until group.size) {
             if (group[i] == '.') {
                 newGroup.add('.')
@@ -128,25 +130,19 @@ class Day12 : Day(true) {
 
             }
         }
-        return if (isValid(values, newGroup.joinToString(""))) {
+
+        val result: Int = if (isValid(values, newGroup.joinToString(""))) {
             1
         } else {
             0
         }
+
+        return result
     }
 
     fun isValid(values: List<Int>, newSpring: String): Boolean {
-        val split = newSpring.split(".").filter { it.isNotEmpty() }
-        if (split.size == values.size) {
-            for (i in values.indices) {
-                if (values[i] != split[i].length) {
-                    return false
-                }
-            }
-        } else {
-            return false
-        }
-        return true
+        val split = newSpring.split(".").filter { it.isNotEmpty() }.map { it.length }
+        return split == values
     }
 
     fun allCombinations(length: Int): List<List<Char>> {
