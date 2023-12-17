@@ -52,8 +52,14 @@ class Day17 : Day(true) {
                 val newDistance = currentDistance + neighbor.getWeight()
 
                 val currentValues = distance.getOrDefault(neighbor, Int.MAX_VALUE)
-                val lenghtSinceBiegung = getPath(current, previous)
-
+                if (newDistance == currentValues) {
+                    val lenghtSinceBiegung = getPath(current, previous).numberOfCoordinatesInOneRow()
+                    val otherLenghtSinceBiegung = getPath(neighbor, previous).dropLast(1).numberOfCoordinatesInOneRow()
+                    if (lenghtSinceBiegung > otherLenghtSinceBiegung) {
+                        previous[neighbor] = current
+                        priorityQueue.add(neighbor to newDistance)
+                    }
+                }
 
                 if (newDistance < currentValues) {
                     distance[neighbor] = newDistance
@@ -129,28 +135,6 @@ fun List<Coordinate>.getNextFields(): List<Coordinate> {
 }
 
 class Coordinate(val x: Int, val y: Int) {
-    fun up(): Coordinate {
-        return Coordinate(x, y - 1)
-    }
-
-    fun down(): Coordinate {
-        return Coordinate(x, y + 1)
-    }
-
-    fun left(): Coordinate {
-        return Coordinate(x - 1, y)
-    }
-
-    fun right(): Coordinate {
-        return Coordinate(x + 1, y)
-    }
-
-    fun isNeighbour(other: Coordinate): Boolean {
-        val xDiff = abs(this.x - other.x)
-        val yDiff = abs(this.y - other.y)
-        return (xDiff == 1 && yDiff == 0) || (xDiff == 0 && yDiff == 1)
-    }
-
     fun getNeighbours(): List<Coordinate> {
         return listOf(
             Coordinate(x - 1, y),
