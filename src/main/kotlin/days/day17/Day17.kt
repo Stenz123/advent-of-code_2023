@@ -3,13 +3,12 @@ package days.day17
 import days.Day
 import java.util.*
 import kotlin.collections.HashMap
-import kotlin.math.abs
 
 class Day17 : Day(true) {
     private val heatMap = parseInput(readInput())
     override fun partOne(): Any {
         val size = readInput().size - 1
-        val result = findShortestPath(Coordinate(0, 0), Coordinate(size, size))!!
+        val result = findShortestPath(Coordinate(0, 0), Coordinate(readInput().first().length - 1, size))!!
         printResult(result)
 
         return result.sumOf { it.getWeight() }
@@ -29,57 +28,72 @@ class Day17 : Day(true) {
         return mirrorMap
     }
 
-    fun findShortestPath(start: Coordinate, target: Coordinate): List<Coordinate>? {
-        val priorityQueue = PriorityQueue<Pair<Coordinate, Int>>(compareBy { it.second })
-        val distance = HashMap<Coordinate, Int>()
-        val previous = HashMap<Coordinate, Coordinate>()
+    fun findShortestPath(start: Coordinate, target: Coordinate, minBlocks: Int, maxBlocks: Int): List<Coordinate>? {
+        val priorityQueue = PriorityQueue<Pair<Pair<Coordinate, Int>, Int>>(compareBy { it.second })
+        val distance = HashMap<Pair<Coordinate, Int>, Int>()
+        val previous = HashMap<Pair<Coordinate, Int>, Pair<Coordinate, Int>>()
 
-        priorityQueue.add(start to 0)
-        distance[start] = 0
+        priorityQueue.add(start to 0 to 0)
+        distance[start to 0] = 0
 
         while (priorityQueue.isNotEmpty()) {
             val (current, currentDistance) = priorityQueue.poll()
+            val path = getPath(current, previous, start)
 
-            if (current == target) {
-                return getPath(target, previous).reversed()
+            if (current.first == Coordinate(3, 0)) {
+                println()
             }
+            val neighbours = path.getNextFields()
+                .filter { heatMap.containsKey(it.first) }
 
-            val path = getPath(current, previous)
-            val neighbours: List<Coordinate> = path.getNextFields()
-                .filter { heatMap.containsKey(it) }
-                .filter { !path.contains(it) }
+
             for (neighbor in neighbours) {
-                val newDistance = currentDistance + neighbor.getWeight()
+                val newDistance = currentDistance + neighbor.first.getWeight()
 
                 val currentValues = distance.getOrDefault(neighbor, Int.MAX_VALUE)
                 if (newDistance == currentValues) {
-                    val lenghtSinceBiegung = getPath(current, previous).numberOfCoordinatesInOneRow()
-                    val otherLenghtSinceBiegung = getPath(neighbor, previous).dropLast(1).numberOfCoordinatesInOneRow()
+                    val lenghtSinceBiegung = current.second
+                    val otherLenghtSinceBiegung = getPath(neighbor, previous, start).dropLast(1).last().second
                     if (lenghtSinceBiegung > otherLenghtSinceBiegung) {
+                        distance[neighbor] = newDistance
                         previous[neighbor] = current
+
                         priorityQueue.add(neighbor to newDistance)
                     }
                 }
 
-                if (newDistance < currentValues) {
+                if (newDistance < currentValues ) {
                     distance[neighbor] = newDistance
                     previous[neighbor] = current
                     priorityQueue.add(neighbor to newDistance)
                 }
+            }
+
+            if ( current.first == target) {
+                println(distance[previous.keys.first { it.first == target }])
+                val results = priorityQueue.filter { it.first.first == target }
+                return getPath(previous.keys.first { it.first == target }, previous, start).map { it.first }
             }
         }
 
         return null // No path found
     }
 
-    fun getPath(curret: Coordinate, previous: Map<Coordinate, Coordinate>): List<Coordinate> {
+    fun getPath(
+        curret: Pair<Coordinate, Int>,
+        previous: HashMap<Pair<Coordinate, Int>, Pair<Coordinate, Int>>,
+        start: Coordinate
+    ): List<Pair<Coordinate, Int>> {
         var node = curret
-        val path = mutableListOf<Coordinate>()
-        while (node != Coordinate(0, 0)) {
+        val path = mutableListOf<Pair<Coordinate, Int>>()
+        while (node.first != start) {
             path.add(node)
+            if (previous[node]!!.second == 0 && previous[node]!!.second > node.second - 1) {
+                println()
+            }
             node = previous[node]!!
         }
-        path.add(Coordinate(0, 0))
+        path.add(start to 1)
         return path.reversed()
     }
 
@@ -87,7 +101,7 @@ class Day17 : Day(true) {
 
     fun printResult(result: List<Coordinate>) {
         for (y in 0 until readInput().size) {
-            for (x in 0 until readInput().size) {
+            for (x in 0 until readInput().first().length) {
                 if (result.contains(Coordinate(x, y))) {
                     print("\u001B[35m${heatMap[Coordinate(x, y)]}\u001B[0m")
                 } else {
@@ -99,39 +113,38 @@ class Day17 : Day(true) {
     }
 }
 
-fun List<Coordinate>.areLastFourInARow(): Boolean {
-    return numberOfCoordinatesInOneRow() == 4
-}
 
-fun List<Coordinate>.numberOfCoordinatesInOneRow(): Int {
-    if (this.size < 2) return this.size
-
-    if (this.last().y == this[size - 2].y) {
-        val lastY = this.last().y
-        return this.reversed().takeWhile { it.y == lastY }.count()
-    } else {
-        val lastX = this.last().x
-        return this.reversed().takeWhile { it.x == lastX }.count()
+fun List<Pair<Coordinate, Int>>.getNextFields(): List<Pair<Coordinate, Int>> {
+    if (this.size == 1) {
+        return this.last().first.getNeighbours().map { it to 2 }
     }
-}
-
-fun List<Coordinate>.getNextFields(): List<Coordinate> {
-    if (this.areLastFourInARow()) {
-        val coordinatesToAvoid = mutableListOf<Coordinate>()
-        if (this.last().x == this[this.size - 2].x) {
-            coordinatesToAvoid.add(Coordinate(this.last().x, this.last().y - 1))
-            coordinatesToAvoid.add(Coordinate(this.last().x, this.last().y + 1))
+    if (this.last().second == 3) {
+        val result = mutableListOf<Pair<Coordinate, Int>>()
+        if (this.last().first.x != this[this.size - 2].first.x) {
+            result.add(Coordinate(this.last().first.x, this.last().first.y - 1) to 0)
+            result.add(Coordinate(this.last().first.x, this.last().first.y + 1) to 0)
         } else {
-            coordinatesToAvoid.add(Coordinate(this.last().x + 1, this.last().y))
-            coordinatesToAvoid.add(Coordinate(this.last().x - 1, this.last().y))
+            result.add(Coordinate(this.last().first.x + 1, this.last().first.y) to 0)
+            result.add(Coordinate(this.last().first.x - 1, this.last().first.y) to 0)
         }
+        return result.filter { !this.map { it.first }.contains(it.first) }
+    }
+    val result = mutableListOf<Pair<Coordinate, Int>>()
 
-        return this.last().getNeighbours().filter { coordinate ->
-            coordinate != this.last() && !coordinatesToAvoid.contains(coordinate)
-        }
+    var newXRowLength = if (this.last().first.x == this[this.size - 2].first.x) this.last().second + 1 else 0
+    var newYRowLength = if (this.last().first.y == this[this.size - 2].first.y) this.last().second + 1 else 0
+
+    if (this.last().second == 0) {
+        newXRowLength = 1
+        newYRowLength = 1
     }
 
-    return this.last().getNeighbours().filter { !this.contains(it) }
+    result.add(Coordinate(this.last().first.x, this.last().first.y - 1) to newXRowLength)
+    result.add(Coordinate(this.last().first.x, this.last().first.y + 1) to newXRowLength)
+    result.add(Coordinate(this.last().first.x + 1, this.last().first.y) to newYRowLength)
+    result.add(Coordinate(this.last().first.x - 1, this.last().first.y) to newYRowLength)
+
+    return result.filter { !this.map { it.first }.contains(it.first) }
 }
 
 class Coordinate(val x: Int, val y: Int) {
