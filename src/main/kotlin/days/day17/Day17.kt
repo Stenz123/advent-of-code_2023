@@ -9,13 +9,21 @@ class Day17 : Day() {
     private val heatMap = parseInput(readInput())
     override fun partOne(): Any {
         val size = readInput().size - 1
-        findShortestPath(Coordinate(0, 0), Coordinate(readInput().first().length - 1, size), 0, 3)
-        return -1
+        val start = Coordinate(0, 0)
+        //val result = findShortestPath(start, Coordinate(readInput().first().length - 1, size), 0, 3)!!
+        //printResult(result)
+
+        //return result.sumOf { it.getWeight() }-start.getWeight()
+        return 0
     }
 
     override fun partTwo(): Any {
         val size = readInput().size - 1
-        return -1
+        val start = Coordinate(0, 0)
+        val result = findShortestPath(start, Coordinate(readInput().first().length - 1, size), 3, 10)!!
+        printResult(result)
+
+        return result.sumOf { it.getWeight() }-start.getWeight()
     }
 
     fun parseInput(input: List<String>): Map<Coordinate, Int> {
@@ -28,7 +36,12 @@ class Day17 : Day() {
         return mirrorMap
     }
 
-    fun findShortestPath(start: Coordinate, target: Coordinate, minBlocks: Int, maxBlocks: Int): MutableList<List<Coordinate>> {
+    fun findShortestPath(
+        start: Coordinate,
+        target: Coordinate,
+        minBlocks: Int,
+        maxBlocks: Int
+    ): List<Coordinate>? {
         val priorityQueue = PriorityQueue<Pair<Pair<Coordinate, Int>, Int>>(compareBy { it.second })
         val distance = HashMap<Pair<Coordinate, Int>, Int>()
         val previous = HashMap<Pair<Coordinate, Int>, Pair<Coordinate, Int>>()
@@ -42,16 +55,8 @@ class Day17 : Day() {
             val (current, currentDistance) = priorityQueue.poll()
             val path = getPath(current, previous, start)
 
-
             val neighbours = path.getNextFields(minBlocks, maxBlocks)
                 .filter { heatMap.containsKey(it.first) }
-
-            if ( current.first == target) {
-                if (current.second in minBlocks..maxBlocks) {
-                    result.add(getPath(current, previous, start).map { it.first })
-                    println(getPath(current, previous, start).map { it.first }.sumOf { it.getWeight() }-start.getWeight())
-                }
-            }
 
             for (neighbor in neighbours) {
                 val newDistance = currentDistance + neighbor.first.getWeight()
@@ -60,7 +65,7 @@ class Day17 : Day() {
                 if (newDistance == currentValues) {
                     val lenghtSinceBiegung = current.second
                     val otherLenghtSinceBiegung = getPath(neighbor, previous, start).dropLast(1).last().second
-                    if (lenghtSinceBiegung > otherLenghtSinceBiegung) {
+                    if (lenghtSinceBiegung < otherLenghtSinceBiegung) {
                         distance[neighbor] = newDistance
                         previous[neighbor] = current
 
@@ -68,16 +73,27 @@ class Day17 : Day() {
                     }
                 }
 
-                if (newDistance < currentValues ) {
+                if (newDistance < currentValues) {
                     distance[neighbor] = newDistance
                     previous[neighbor] = current
                     priorityQueue.add(neighbor to newDistance)
                 }
             }
+            if (current.first == target) {
+                if (current.second in minBlocks+1..maxBlocks) {
+                    result.add(getPath(current, previous, start).map { it.first })
+                }
+            }
 
         }
 
-        return result // No path found
+        val finals = previous.filter { it.key.first == target }.keys
+
+        val res = finals.map{
+            getPath(it, previous, start).map { it.first }
+        }
+
+        return res.last()
     }
 
     fun getPath(
@@ -117,9 +133,9 @@ class Day17 : Day() {
 
 fun List<Pair<Coordinate, Int>>.getNextFields(minBlocks: Int, maxBlocks: Int): List<Pair<Coordinate, Int>> {
     if (this.size == 1) {
-        return this.last().first.getNeighbours().map { it to 2 }
+        return this.last().first.getNeighbours().filter { !this.map { it.first }.contains(it) }.map { it to this.last().second+1 }
     }
-    if (this.last().second == maxBlocks) {
+    if (this.last().second == maxBlocks - 1) {
         val result = mutableListOf<Pair<Coordinate, Int>>()
         if (this.last().first.x != this[this.size - 2].first.x) {
             result.add(Coordinate(this.last().first.x, this.last().first.y - 1) to 0)
@@ -140,10 +156,10 @@ fun List<Pair<Coordinate, Int>>.getNextFields(minBlocks: Int, maxBlocks: Int): L
         newYRowLength = 1
     }
 
-    if (this.last().second < minBlocks && this.last().first.x == this[this.size - 2].first.x) {
+    if (this.last().second <  minBlocks && this.last().first.x == this[this.size - 2].first.x) {
         result.add(Coordinate(this.last().first.x, this.last().first.y - 1) to newXRowLength)
         result.add(Coordinate(this.last().first.x, this.last().first.y + 1) to newXRowLength)
-    }else if (this.last().second < minBlocks && this.last().first.y == this[this.size - 2].first.y) {
+    } else if (this.last().second < minBlocks && this.last().first.y == this[this.size - 2].first.y) {
         result.add(Coordinate(this.last().first.x + 1, this.last().first.y) to newYRowLength)
         result.add(Coordinate(this.last().first.x - 1, this.last().first.y) to newYRowLength)
     } else {
