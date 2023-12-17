@@ -4,18 +4,18 @@ import days.Day
 import java.util.*
 import kotlin.collections.HashMap
 
-class Day17 : Day(true) {
+
+class Day17 : Day() {
     private val heatMap = parseInput(readInput())
     override fun partOne(): Any {
         val size = readInput().size - 1
-        val result = findShortestPath(Coordinate(0, 0), Coordinate(readInput().first().length - 1, size))!!
-        printResult(result)
-
-        return result.sumOf { it.getWeight() }
+        findShortestPath(Coordinate(0, 0), Coordinate(readInput().first().length - 1, size), 0, 3)
+        return -1
     }
 
     override fun partTwo(): Any {
-        return "day 17 part 2 not Implemented"
+        val size = readInput().size - 1
+        return -1
     }
 
     fun parseInput(input: List<String>): Map<Coordinate, Int> {
@@ -28,10 +28,12 @@ class Day17 : Day(true) {
         return mirrorMap
     }
 
-    fun findShortestPath(start: Coordinate, target: Coordinate, minBlocks: Int, maxBlocks: Int): List<Coordinate>? {
+    fun findShortestPath(start: Coordinate, target: Coordinate, minBlocks: Int, maxBlocks: Int): MutableList<List<Coordinate>> {
         val priorityQueue = PriorityQueue<Pair<Pair<Coordinate, Int>, Int>>(compareBy { it.second })
         val distance = HashMap<Pair<Coordinate, Int>, Int>()
         val previous = HashMap<Pair<Coordinate, Int>, Pair<Coordinate, Int>>()
+
+        var result = mutableListOf<List<Coordinate>>()
 
         priorityQueue.add(start to 0 to 0)
         distance[start to 0] = 0
@@ -40,12 +42,16 @@ class Day17 : Day(true) {
             val (current, currentDistance) = priorityQueue.poll()
             val path = getPath(current, previous, start)
 
-            if (current.first == Coordinate(3, 0)) {
-                println()
-            }
-            val neighbours = path.getNextFields()
+
+            val neighbours = path.getNextFields(minBlocks, maxBlocks)
                 .filter { heatMap.containsKey(it.first) }
 
+            if ( current.first == target) {
+                if (current.second in minBlocks..maxBlocks) {
+                    result.add(getPath(current, previous, start).map { it.first })
+                    println(getPath(current, previous, start).map { it.first }.sumOf { it.getWeight() }-start.getWeight())
+                }
+            }
 
             for (neighbor in neighbours) {
                 val newDistance = currentDistance + neighbor.first.getWeight()
@@ -69,14 +75,9 @@ class Day17 : Day(true) {
                 }
             }
 
-            if ( current.first == target) {
-                println(distance[previous.keys.first { it.first == target }])
-                val results = priorityQueue.filter { it.first.first == target }
-                return getPath(previous.keys.first { it.first == target }, previous, start).map { it.first }
-            }
         }
 
-        return null // No path found
+        return result // No path found
     }
 
     fun getPath(
@@ -114,11 +115,11 @@ class Day17 : Day(true) {
 }
 
 
-fun List<Pair<Coordinate, Int>>.getNextFields(): List<Pair<Coordinate, Int>> {
+fun List<Pair<Coordinate, Int>>.getNextFields(minBlocks: Int, maxBlocks: Int): List<Pair<Coordinate, Int>> {
     if (this.size == 1) {
         return this.last().first.getNeighbours().map { it to 2 }
     }
-    if (this.last().second == 3) {
+    if (this.last().second == maxBlocks) {
         val result = mutableListOf<Pair<Coordinate, Int>>()
         if (this.last().first.x != this[this.size - 2].first.x) {
             result.add(Coordinate(this.last().first.x, this.last().first.y - 1) to 0)
@@ -139,10 +140,19 @@ fun List<Pair<Coordinate, Int>>.getNextFields(): List<Pair<Coordinate, Int>> {
         newYRowLength = 1
     }
 
-    result.add(Coordinate(this.last().first.x, this.last().first.y - 1) to newXRowLength)
-    result.add(Coordinate(this.last().first.x, this.last().first.y + 1) to newXRowLength)
-    result.add(Coordinate(this.last().first.x + 1, this.last().first.y) to newYRowLength)
-    result.add(Coordinate(this.last().first.x - 1, this.last().first.y) to newYRowLength)
+    if (this.last().second < minBlocks && this.last().first.x == this[this.size - 2].first.x) {
+        result.add(Coordinate(this.last().first.x, this.last().first.y - 1) to newXRowLength)
+        result.add(Coordinate(this.last().first.x, this.last().first.y + 1) to newXRowLength)
+    }else if (this.last().second < minBlocks && this.last().first.y == this[this.size - 2].first.y) {
+        result.add(Coordinate(this.last().first.x + 1, this.last().first.y) to newYRowLength)
+        result.add(Coordinate(this.last().first.x - 1, this.last().first.y) to newYRowLength)
+    } else {
+        result.add(Coordinate(this.last().first.x, this.last().first.y - 1) to newXRowLength)
+        result.add(Coordinate(this.last().first.x, this.last().first.y + 1) to newXRowLength)
+        result.add(Coordinate(this.last().first.x + 1, this.last().first.y) to newYRowLength)
+        result.add(Coordinate(this.last().first.x - 1, this.last().first.y) to newYRowLength)
+    }
+
 
     return result.filter { !this.map { it.first }.contains(it.first) }
 }
