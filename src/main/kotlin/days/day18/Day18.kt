@@ -1,10 +1,9 @@
 package days.day18
 
 import days.Day
-import java.util.LinkedList
-import java.util.Queue
+import kotlin.math.abs
 
-class Day18 : Day(true) {
+class Day18 : Day() {
     override fun partOne(): Any {
         val digMap = mutableSetOf(Coordinate(0, 0))
         readInput().forEach {
@@ -13,33 +12,20 @@ class Day18 : Day(true) {
             val currentCoordinate = digMap.last()
             digMap.addAll(currentCoordinate.goXInDirextion((numberOfSteps - 1).toLong(), direction))
         }
-        val queue: Queue<Coordinate> = LinkedList()
-        val visited = mutableSetOf<Coordinate>()
-        var count = 0
-
-        queue.add(Coordinate(1, 1))
-        visited.add(Coordinate(1, 1))
-
-        while (queue.isNotEmpty()) {
-            val current = queue.poll()
-            count++
-
-            current.getNeighbours().forEach { neighbor ->
-                if (!digMap.contains(neighbor) && !visited.contains(neighbor)) {
-                    queue.add(neighbor)
-                    visited.add(neighbor)
-                }
-            }
+        var result = 0L
+        val digMapList = digMap.toList()
+        for (i in 0 .. digMap.size-2) {
+            result += determinante(digMapList[i], digMapList[i+1])
         }
-
-        return digMap.size + visited.size
+        result+= determinante(digMapList.last(), digMapList.first())
+        return (result+digMapList.size)/2 + 1
     }
 
     override fun partTwo(): Any {
         val digMap = mutableSetOf(Coordinate(0, 0))
         readInput().forEach {
             val directionNumber = it[it.length - 2]
-            val numberOfSteps = it.substringAfter("#").dropLast(2).toUpperCase().toLong(radix = 16)
+            val numberOfSteps = it.substringAfter("#").dropLast(2).toLong(radix = 16)
 
             when (directionNumber) {
                 '0' -> digMap.add(Coordinate(digMap.last().x + numberOfSteps, digMap.last().y))//R
@@ -51,18 +37,25 @@ class Day18 : Day(true) {
                 }
             }
         }
-        var result = 0L
         val digMapList = digMap.toList()
+        var borderLength = 0L
+        var area = 0L
         for (i in 0 .. digMap.size-2) {
-            result += determinante(digMapList[i], digMapList[i+1])
+            borderLength += abs(digMapList[i].x-digMapList[i+1].x)
+            borderLength += abs(digMapList[i].y-digMapList[i+1].y)
+
+            area += determinante(digMapList[i], digMapList[i+1])
         }
-        result+= determinante(digMapList.last(), digMapList.first())
-        return result
+        area+= determinante(digMapList.last(), digMapList.first())
+        borderLength += abs(digMapList.last().x-digMapList.first().x)
+        borderLength += abs(digMapList.last().y-digMapList.first().y)
+
+        return (abs(area)+borderLength) /2L + 1L
     }
 }
 
 fun determinante(c1: Coordinate, c2: Coordinate):Long {
-    return c1.x * c2.y - c2.x * c1.y
+    return (c1.y + c2.y) * (c1.x - c2.x)
 }
 
 class Coordinate(val x: Long, val y: Long) {
