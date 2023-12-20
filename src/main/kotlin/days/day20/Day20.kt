@@ -1,8 +1,7 @@
 package days.day20
 
 import days.Day
-import java.util.LinkedList
-import java.util.Queue
+import java.util.*
 import kotlin.math.floor
 
 class Day20 : Day() {
@@ -18,14 +17,38 @@ class Day20 : Day() {
         val loopDict = hashMapOf<Int, Pair<Int, Int>>()
         var loopCount = 0
 
-        while (!isInitialState && loopCount < 1000) {
+        val rxMachineDict = HashMap<String, Int>()
+        modules.filterIsInstance<Conjunction>()
+            .first {
+                it.identifier == "kl"
+            }.dict.keys.forEach {
+                rxMachineDict[it] = -1
+            }
+
+
+        while (!isInitialState) {
             val queue: Queue<Triple<Module, Boolean, String>> = LinkedList()
             queue.add(Triple(broadCaster, false, "button"))
             numberOfLowSignals++
             while (queue.isNotEmpty()) {
                 val current = queue.remove()
+                if (current.first.identifier == "rx" && !current.second) {
+                    return loopCount
+                }
+
                 val newSignals = current.first.sendSignal(current.second, current.third)
                 queue.addAll(newSignals)
+
+                newSignals.forEach {
+                    if (rxMachineDict.containsKey(it.first.identifier) && !it.second && loopCount != 0) {
+                        rxMachineDict[it.first.identifier] = loopCount+1
+                        if (rxMachineDict.values.none { it == -1 }) {
+                            return lcm(rxMachineDict.values.map { it.toLong() }.toLongArray())
+                        }
+                    }
+
+                }
+
                 if (newSignals.isNotEmpty() && newSignals.first().second) {
                     numberOfHighSignals += newSignals.size
                 } else {
@@ -37,14 +60,14 @@ class Day20 : Day() {
             loopDict[loopCount] = numberOfLowSignals to numberOfHighSignals
             println(loopCount)
         }
-        var lowSignals = numberOfLowSignals  * floor(1000.0 / loopCount).toInt()
-        var highSignals = numberOfHighSignals  * floor(1000.0 / loopCount).toInt()
+        var lowSignals = numberOfLowSignals * floor(1000.0 / loopCount).toInt()
+        var highSignals = numberOfHighSignals * floor(1000.0 / loopCount).toInt()
         val rest = 1000 % loopCount
         if (rest > 0) {
             lowSignals += loopDict[rest]!!.first
             highSignals += loopDict[rest]!!.second
         }
-        return lowSignals*highSignals
+        return lowSignals * highSignals
     }
 
     override fun partTwo(): Any {
@@ -69,12 +92,12 @@ class Day20 : Day() {
                 rawInput.first { line -> line.substringBefore(" ->").removePrefixes() == module.identifier }
             val nextModulesSplit = moduleString.substringAfter("-> ").split(", ")
             val currentModule = modules.first { it.identifier == moduleString.substringBefore(" ->").removePrefixes() }
-            nextModulesSplit.forEach { nextModule ->
-                val nextModule = modules.firstOrNull { it.identifier == nextModule }
+            nextModulesSplit.forEach { nextModuleId ->
+                val nextModule = modules.firstOrNull { it.identifier == nextModuleId }
                 if (nextModule != null) {
                     currentModule.connections.add(nextModule)
                 } else {
-                    currentModule.connections.add(OutputModule("Output"))
+                    currentModule.connections.add(OutputModule(nextModuleId))
                 }
             }
         }
@@ -156,6 +179,27 @@ class OutputModule(identifier: String) : Module(identifier) {
     override fun sendSignal(signal: Boolean, sender: String): List<Triple<Module, Boolean, String>> = listOf()
     override fun isInInitialState() = true
 
+}
+
+private fun lcm(a: Long, b: Long): Long {
+    return a * (b / gcd(a, b))
+}
+
+private fun lcm(input: LongArray): Long {
+    var result = input[0]
+    for (i in 1 until input.size) result = lcm(result, input[i])
+    return result
+}
+
+private fun gcd(a: Long, b: Long): Long {
+    var a = a
+    var b = b
+    while (b > 0) {
+        val temp = b
+        b = a % b // % is remainder
+        a = temp
+    }
+    return a
 }
 
 fun String.removePrefixes() = this.replace("%", "").replace("&", "")
