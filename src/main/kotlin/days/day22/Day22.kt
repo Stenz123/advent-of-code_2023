@@ -5,21 +5,14 @@ import java.util.*
 
 class Day22: Day() {
     override fun partOne(): Any {
-        val bricks = readInput().map {
-            val split = it.split(("~"))
-            val coordinates = split.map {
-                val coSplit = it.split(",").map { it.toInt() }
-                Coordinate(coSplit[0], coSplit[1], coSplit[2])
-            }
-            Brick(coordinates[0], coordinates[1])
-        }
+        val bricks = parseInput()
         val brickCoordinateMap = mutableListOf<Coordinate>()
 
         val queue: PriorityQueue<Brick> = PriorityQueue()
         queue.addAll(bricks)
         while (queue.isNotEmpty()) {
             val current = queue.poll()
-            println("$current ${current.lowestZ}")
+            //println("$current ${current.lowestZ}")
             while (current.checkIfCanFall(brickCoordinateMap)) {
                 current.moveDown()
             }
@@ -46,7 +39,45 @@ class Day22: Day() {
     }
 
     override fun partTwo(): Any {
-        return "day 22 part 2 not Implemented"
+        val bricks = parseInput()
+        val brickCoordinateMap = mutableListOf<Coordinate>()
+
+        val queue: PriorityQueue<Brick> = PriorityQueue()
+        queue.addAll(bricks)
+        while (queue.isNotEmpty()) {
+            val current = queue.poll()
+            //println("$current ${current.lowestZ}")
+            while (current.checkIfCanFall(brickCoordinateMap)) {
+                current.moveDown()
+            }
+            brickCoordinateMap.addAll(current.getAllBrickCoordinates())
+        }
+
+        var result = 0
+        for (brick in bricks.reversed()) {
+            val brickCoordinateMapWithBrickRemoved = brickCoordinateMap.toMutableList()
+            brickCoordinateMapWithBrickRemoved.removeAll (brick.getAllBrickCoordinates())
+
+            val bricksAbove = bricks.filter { it.lowestZ > brick.lowestZ && it != brick }.sortedBy { it.lowestZ }
+            for (otherBrick in bricksAbove) {
+                if (otherBrick.checkIfCanFall(brickCoordinateMapWithBrickRemoved)) {
+                    brickCoordinateMapWithBrickRemoved.removeAll(otherBrick.getAllBrickCoordinates())
+                    result++
+                }
+            }
+        }
+
+        return result
+    }
+    fun parseInput():List<Brick>{
+        return readInput().map {
+            val split = it.split(("~"))
+            val coordinates = split.map {
+                val coSplit = it.split(",").map { it.toInt() }
+                Coordinate(coSplit[0], coSplit[1], coSplit[2])
+            }
+            Brick(coordinates[0], coordinates[1])
+        }
     }
 }
 
