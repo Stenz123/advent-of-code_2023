@@ -2,121 +2,152 @@ package days.day23
 
 import days.Day
 import java.util.*
+import kotlin.collections.HashMap
 
-class Day23: Day() {
+//Note: Increase your stack size -Xss10m
+//Part 1: I implemented dijkstra algorithm wich worked amazing for p
+//Part 2: I couldn't get dijkstra to work, so i redid everything with a recursive solution
+class Day23 : Day() {
     override fun partOne(): Any {
         val map = mutableMapOf<Coordinate, Char>()
-        readInput().forEachIndexed{ y, line ->
-            line.forEachIndexed{x, char ->
+        readInput().forEachIndexed { y, line ->
+            line.forEachIndexed { x, char ->
                 if (char != '#') {
-                    map[Coordinate(x,y)] = char
+                    map[Coordinate(x, y)] = char
                 }
             }
         }
         val start = map.keys.first { it.y == 0 }
-        val end = map.keys.first{it.y == readInput().size-1}
+        val end = map.keys.first { it.y == readInput().size - 1 }
 
         return dijkstra(start, end, map)
     }
 
     override fun partTwo(): Any {
         val map = mutableMapOf<Coordinate, Char>()
-        readInput().forEachIndexed{ y, line ->
-            line.forEachIndexed{x, char ->
+        readInput().forEachIndexed { y, line ->
+            line.forEachIndexed { x, char ->
                 if (char != '#') {
-                    map[Coordinate(x,y)] = '.'
+                    map[Coordinate(x, y)] = '.'
                 }
             }
         }
         val start = map.keys.first { it.y == 0 }
-        val end = map.keys.first{it.y == readInput().size-1}
+        val end = map.keys.first { it.y == readInput().size - 1 }
 
-        return dijkstra(start, end, map)
+        val visited = HashMap<Coordinate, Boolean>()
+        map.keys.forEach { visited[it] = false }
 
+        return solve(start, end, visited, 0, map)
     }
 
-    fun dijkstra(start: Coordinate, end: Coordinate, map: Map<Coordinate, Char>):Int {
-        val distances = mutableMapOf<Coordinate, Int>()
-        val visited = mutableSetOf<Coordinate>()
-        val priorityQueue:Queue<Coordinate> = LinkedList()
-        val previous = mutableMapOf<Coordinate, Coordinate>()
+    fun solve(current: Coordinate, end: Coordinate, visited: HashMap<Coordinate, Boolean>, currentLength: Int, map: Map<Coordinate, Char>):Int {
+        if (current !in map.keys || visited[current]!!) {
+            return -1
+        }
+        if (current == end) {
+            if (highest < currentLength) {
+                println(currentLength)
+                highest = currentLength
+            }
+            return currentLength
+        }
+        visited[current] = true
 
-        var result = 0
+        val result = current.getNeighbours(map[current]!!).maxOf {neighbour ->
+            solve(neighbour, end, visited, currentLength + 1, map)
+        }
+        visited[current] = false
 
-        // Initialization
-        distances[start] = 0
-        priorityQueue.add(start)
-        priorityQueue.add(start)
+        return result
+    }
 
-        while (priorityQueue.isNotEmpty()) {
-            val current = priorityQueue.poll()
+    companion object {
+        var highest = 0
+    }
+}
 
-            visited.add(current)
 
-            val neighbors = current.getNeighbours(map[current]!!)
-                .filter { map.containsKey(it) }
-                .filter { !getPath(previous, start, current).contains(it) }
-            for (neighbor in neighbors) {
-                val newDistance = distances[current]!! + 1
-                if (!priorityQueue.contains(neighbor)) {
-                    priorityQueue.add(neighbor)
-                }
+fun dijkstra(start: Coordinate, end: Coordinate, map: Map<Coordinate, Char>): Int {
+    val distances = mutableMapOf<Coordinate, Int>()
+    val visited = mutableSetOf<Coordinate>()
+    val priorityQueue: Queue<Coordinate> = LinkedList()
+    val previous = mutableMapOf<Coordinate, Coordinate>()
 
-                if (newDistance > distances.getOrDefault(neighbor, Int.MIN_VALUE)) {
-                    distances[neighbor] = newDistance
-                    previous[neighbor] = current
-                    if (neighbor == end) {
-                        // Reached the destination, reconstruct and print the path
-                        if (distances[neighbor]!! > result) {
-                            //printPath(previous, start, end, map)
-                            println("\u001B[32m${distances[neighbor]!!}\u001B[0m")
-                            result = distances[neighbor]!!
-                        }
+    var result = 0
+
+    // Initialization
+    distances[start] = 0
+    priorityQueue.add(start)
+    priorityQueue.add(start)
+
+    while (priorityQueue.isNotEmpty()) {
+        val current = priorityQueue.poll()
+
+        visited.add(current)
+
+        val neighbors = current.getNeighbours(map[current]!!)
+            .filter { map.containsKey(it) }
+            .filter { !getPath(previous, start, current).contains(it) }
+        for (neighbor in neighbors) {
+            val newDistance = distances[current]!! + 1
+            if (!priorityQueue.contains(neighbor)) {
+                priorityQueue.add(neighbor)
+            }
+
+            if (newDistance > distances.getOrDefault(neighbor, Int.MIN_VALUE)) {
+                distances[neighbor] = newDistance
+                previous[neighbor] = current
+                if (neighbor == end) {
+                    // Reached the destination, reconstruct and print the path
+                    if (distances[neighbor]!! > result) {
+                        //printPath(previous, start, end, map)
+                        println("\u001B[32m${distances[neighbor]!!}\u001B[0m")
+                        result = distances[neighbor]!!
                     }
                 }
             }
         }
-        printPath(previous, start, end, map)
-        return result
+    }
+    printPath(previous, start, end, map)
+    return result
+}
+
+fun getPath(previous: Map<Coordinate, Coordinate>, start: Coordinate, end: Coordinate): List<Coordinate> {
+    var current = end
+    val path = mutableListOf<Coordinate>()
+
+    while (current != start) {
+        path.add(current)
+        current = previous[current] ?: break
     }
 
-    fun getPath(previous: Map<Coordinate, Coordinate>, start: Coordinate, end: Coordinate): List<Coordinate> {
-        var current = end
-        val path = mutableListOf<Coordinate>()
+    path.add(start)
+    path.reverse()
+    return path
+}
 
-        while (current != start) {
-            path.add(current)
-            current = previous[current] ?: break
-        }
+fun printPath(previous: Map<Coordinate, Coordinate>, start: Coordinate, end: Coordinate, map: Map<Coordinate, Char>) {
+    val path = getPath(previous, start, end)
 
-        path.add(start)
-        path.reverse()
-        return path
-    }
-
-    fun printPath(previous: Map<Coordinate, Coordinate>, start: Coordinate, end: Coordinate, map: Map<Coordinate, Char>) {
-        val path = getPath(previous, start, end)
-
-        for (y in 0..path.maxOfOrNull { it.y }!!) {
-            for (x in 0..path.maxOfOrNull { it.x }!!) {
-                if (path.contains(Coordinate(x, y))) {
-                    print("\u001B[35m*\u001B[0m")
-                }else if (map.containsKey(Coordinate(x, y))) {
-                    print(map[Coordinate(x,y)])
-                }else{
-                    print('#')
-                }
+    for (y in 0..path.maxOfOrNull { it.y }!!) {
+        for (x in 0..path.maxOfOrNull { it.x }!!) {
+            if (path.contains(Coordinate(x, y))) {
+                print("\u001B[35m*\u001B[0m")
+            } else if (map.containsKey(Coordinate(x, y))) {
+                print(map[Coordinate(x, y)])
+            } else {
+                print('#')
             }
-            println()
         }
-
-        println("Shortest path from $start to $end: $path")
+        println()
     }
 
+    println("Shortest path from $start to $end: $path")
 }
 
 class Coordinate(val x: Int, val y: Int) {
-    fun getNeighbours(c:Char): List<Coordinate> {
+    fun getNeighbours(c: Char): List<Coordinate> {
         return when (c) {
             '>' -> listOf(Coordinate(x + 1, y))
             '<' -> listOf(Coordinate(x - 1, y))
