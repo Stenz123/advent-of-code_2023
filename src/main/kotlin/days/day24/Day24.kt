@@ -1,8 +1,8 @@
 package days.day24
 
-import utils.*
-import com.microsoft.z3.*
+import Jama.Matrix
 import days.Day
+import kotlin.math.round
 
 class Day24 : Day() {
     override fun partOne(): Any {
@@ -13,53 +13,88 @@ class Day24 : Day() {
             val velocity = Velocity(split.last()[0], split.last()[1], 0.0)
             Hail(point, velocity)
         }
-        return vectors.cartesianProduct().count { combination ->
-            val collision = Hail.collision2D(combination.first, combination.second)
-            collision != null && collision.x in testArea && collision.y in testArea
-        }
+       // return vectors.cartesianProduct().count { combination ->
+       //     val collision = Hail.collision2D(combination.first, combination.second)
+       //     collision != null && collision.x in testArea && collision.y in testArea
+        //}
+        return "aeds"
     }
     operator fun <T> List<T>.component6(): T = get(5)
     override fun partTwo(): Any {
-        val vectors = readInput().map {
+        //math is very hard and my brain hurts
+        //i needed help with the math
+        //https://www.reddit.com/r/adventofcode/comments/18pnycy/comment/kesqnis/?utm_source=share&utm_medium=web2x&context=3
+
+        val hailstones = readInput().map {
             val split = it.split(" @ ").map { it.split(", ").map(String::toDouble) }
             val point = Point(split.first()[0], split.first()[1],  split.first()[2])
             val velocity = Velocity(split.last()[0], split.last()[1], split.last()[2])
             Hail(point, velocity)
         }
 
-        val ctx = Context()
-        val solver = ctx.mkSolver()
-        val (x, y, z) = listOf("x","y","z").map { ctx.mkIntConst(it) }
-
-        for (currX in 0..2) {
-            val current = vectors[currX]
-            val t = ctx.mkIntConst("x$currX")
-            solver.add(ctx.mkEq(ctx.mkAdd(x, ctx.mkMul(x, t)), ctx.mkAdd(ctx.mkInt(current.point.x.toLong()), ctx.mkMul(ctx.mkInt(current.velocity.x.toLong()), t))))
-            solver.add(ctx.mkEq(ctx.mkAdd(y, ctx.mkMul(y, t)), ctx.mkAdd(ctx.mkInt(current.point.y.toLong()), ctx.mkMul(ctx.mkInt(current.velocity.y.toLong()), t))))
-            solver.add(ctx.mkEq(ctx.mkAdd(z, ctx.mkMul(z, t)), ctx.mkAdd(ctx.mkInt(current.point.z.toLong()), ctx.mkMul(ctx.mkInt(current.velocity.z.toLong()), t))))
+        var coefficients = hailstones.combinations(2).take(6).drop(2).map { (h1, h2) ->
+            (doubleArrayOf(h2.velocity.y - h1.velocity.y,
+                h1.velocity.x - h2.velocity.x,
+                h1.point.y - h2.point.y,
+                h2.point.x - h1.point.x) to
+            doubleArrayOf((h1.velocity.x * h1.point.y - h2.velocity.x * h2.point.y + h2.point.x * h2.velocity.y - h1.point.x * h1.velocity.y)))
         }
 
-        return solver.model.eval(ctx.mkAdd(x, ctx.mkAdd(y, z)), false)
+
+        val A: Matrix = Matrix(coefficients.map { it.first }.toList().toTypedArray())
+        val x: Matrix = Matrix(coefficients.map { it.second }.toList().toTypedArray())
+        val (a, b, d, e) = A.inverse().times(x).array.map { round(it.first()) }
+
+        val h1 = hailstones.first()
+        val t1 = (a - h1.point.x) / (h1.velocity.x - d)
+
+        val h2 = hailstones[1]
+        val t2 = (a - h2.point.x) / (h2.velocity.x - d)
+
+        val f = ((h1.point.z - h2.point.z) + t1 * h1.velocity.z - t2 * h2.velocity.z) / (t1 - t2)
+        val c = h1.point.z + t1 * (h1.velocity.z - f)
+
+        val part2 = a + b + c
+        println("Part 2: $part2")
+        return part2.toLong()
     }
 }
 
+operator fun <T> List<T>.component6(): T = get(5)
+
+fun <T> List<T>.combinations(r: Int): Sequence<List<T>> = sequence {
+    if (r > size) return@sequence
+
+    val indices = IntArray(r)
+    while (true) {
+        yield(indices.map { get(it) })
+
+        var i = r - 1
+        while (i >= 0 && indices[i] == size - r + i) i--
+
+        if (i < 0) break
+
+        indices[i]++
+        for (j in i + 1 until r) indices[j] = indices[j - 1] + 1
+    }
+}
 // Extensions
-fun <T> List<T>.cartesianProduct(): List<Pair<T, T>> {
-    val result = mutableListOf<Pair<T, T>>()
-
-    for (i in indices) {
-        for (j in i + 1 until size) {
-            val pair = Pair(get(i), get(j))
-            val reversePair = Pair(get(j), get(i))
-
-            if (!result.contains(pair) && !result.contains(reversePair)) {
-                result.add(pair)
-            }
-        }
-    }
-
-    return result
-}
+//fun <T> List<T>.cartesianProduct(): List<Pair<T, T>> {
+//    val result = mutableListOf<Pair<T, T>>()
+//
+//    for (i in indices) {
+//        for (j in i + 1 until size) {
+//            val pair = Pair(get(i), get(j))
+//            val reversePair = Pair(get(j), get(i))
+//
+//            if (!result.contains(pair) && !result.contains(reversePair)) {
+//                result.add(pair)
+//            }
+//        }
+//    }
+//
+//    return result
+//}
 
 
 class Hail(val point: Point, val velocity: Velocity) {
