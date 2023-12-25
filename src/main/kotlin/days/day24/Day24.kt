@@ -1,5 +1,7 @@
 package days.day24
 
+import utils.*
+import com.microsoft.z3.*
 import days.Day
 
 class Day24 : Day() {
@@ -9,16 +11,35 @@ class Day24 : Day() {
             val split = it.split(" @ ").map { it.split(", ").map(String::toDouble) }
             val point = Point(split.first()[0], split.first()[1], 0.0)
             val velocity = Velocity(split.last()[0], split.last()[1], 0.0)
-            Vector3(point, velocity)
+            Hail(point, velocity)
         }
         return vectors.cartesianProduct().count { combination ->
-            val collision = Vector3.collision2D(combination.first, combination.second)
+            val collision = Hail.collision2D(combination.first, combination.second)
             collision != null && collision.x in testArea && collision.y in testArea
         }
     }
-
+    operator fun <T> List<T>.component6(): T = get(5)
     override fun partTwo(): Any {
-        return "day 24 part 2 not Implemented"
+        val vectors = readInput().map {
+            val split = it.split(" @ ").map { it.split(", ").map(String::toDouble) }
+            val point = Point(split.first()[0], split.first()[1],  split.first()[2])
+            val velocity = Velocity(split.last()[0], split.last()[1], split.last()[2])
+            Hail(point, velocity)
+        }
+
+        val ctx = Context()
+        val solver = ctx.mkSolver()
+        val (x, y, z) = listOf("x","y","z").map { ctx.mkIntConst(it) }
+
+        for (currX in 0..2) {
+            val current = vectors[currX]
+            val t = ctx.mkIntConst("x$currX")
+            solver.add(ctx.mkEq(ctx.mkAdd(x, ctx.mkMul(x, t)), ctx.mkAdd(ctx.mkInt(current.point.x.toLong()), ctx.mkMul(ctx.mkInt(current.velocity.x.toLong()), t))))
+            solver.add(ctx.mkEq(ctx.mkAdd(y, ctx.mkMul(y, t)), ctx.mkAdd(ctx.mkInt(current.point.y.toLong()), ctx.mkMul(ctx.mkInt(current.velocity.y.toLong()), t))))
+            solver.add(ctx.mkEq(ctx.mkAdd(z, ctx.mkMul(z, t)), ctx.mkAdd(ctx.mkInt(current.point.z.toLong()), ctx.mkMul(ctx.mkInt(current.velocity.z.toLong()), t))))
+        }
+
+        return solver.model.eval(ctx.mkAdd(x, ctx.mkAdd(y, z)), false)
     }
 }
 
@@ -41,13 +62,13 @@ fun <T> List<T>.cartesianProduct(): List<Pair<T, T>> {
 }
 
 
-class Vector3(val point: Point, val velocity: Velocity) {
+class Hail(val point: Point, val velocity: Velocity) {
     override fun toString() = "$point $velocity"
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
         if (javaClass != other?.javaClass) return false
 
-        other as Vector3
+        other as Hail
 
         if (point != other.point) return false
         if (velocity != other.velocity) return false
@@ -63,7 +84,7 @@ class Vector3(val point: Point, val velocity: Velocity) {
     fun addVelocity() = Point(point.x + velocity.x, point.y + velocity.y, point.z + velocity.z)
 
     companion object {
-        fun collision2D(vector1: Vector3, vector2: Vector3): Point? {
+        fun collision2D(vector1: Hail, vector2: Hail): Point? {
             val secondPoint1 = vector1.addVelocity()
             val k1 = calculateSlope(vector1.point, secondPoint1)
             val d1 = calculateYIntercept(vector1.point, k1)
